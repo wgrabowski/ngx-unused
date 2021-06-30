@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const packageJson = require('./package.json');
 import { exit } from "process";
 import { Node } from "ts-morph";
@@ -11,7 +12,7 @@ import {
 } from "./packages/ast/src";
 console.log(`[${packageJson.name} v.${packageJson.version}]`)
 if(process.argv.length < 3){
-    console.log("provide path to tsconfig file");
+    console.log("You have to provide path to tsconfig file");
     exit();
 }
 const files = getProjectFiles(process.argv[2]);
