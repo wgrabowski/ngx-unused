@@ -1,6 +1,6 @@
 {
   "name": "ngx-unused",
-  "version": "0.0.0",
+  "version": "0.0.1-0",
   "description": "",
   "main": "index.js",
   "bin": "index.js",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "tsc index.ts --watch",
-    "prepare":"tsc index.ts"
+    "prepare": "tsc index.ts"
   },
   "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>"
 }
