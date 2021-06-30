@@ -1,0 +1,20 @@
+{
+  "name": "ngx-unused",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": "index.js",
+  "dependencies": {
+    "ts-morph": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^15.12.5",
+    "prettier": "^2.3.2",
+    "typescript": "^4.3.4"
+  },
+  "scripts": {
+    "start": "tsc index.ts --watch",
+    "prepare":"tsc index.ts"
+  },
+  "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>"
+}
