@@ -4,11 +4,14 @@ import { exit, stdout } from "process";
 import { Node } from "ts-morph";
 import {
   getProjectFiles,
+  getPipesFiles,
   getComponentFiles,
   getClassReferencingNodesInOtherFiles,
   isNgModuleField,
   NgModuleMetadataField,
   ComponentSourceFile,
+  PipeSourceFile,
+  CommonSourceFile,
 } from "./packages/ast/src";
 console.log(`[${packageJson.name} v.${packageJson.version}]`);
 if (process.argv.length < 3) {
@@ -18,8 +21,15 @@ if (process.argv.length < 3) {
 stdout.write("Analyzing files. Be patient, it can take some time\n");
 const files = getProjectFiles(process.argv[2]);
 const componentFiles: ComponentSourceFile[] = getComponentFiles(files);
+const pipesFiles: PipeSourceFile[] = getPipesFiles(files);
+const pipeClassNameUsages = getUsagesByClassName(pipesFiles);
+const pipeNameUsages = getPipeUsagesFromComponentTemplates(
+  pipesFiles,
+  componentFiles
+);
+
 const selectorUsages = getComponentUsagesBySelector(componentFiles);
-const classNameUsages = getComponentUsagesByClassName(componentFiles);
+const classNameUsages = getUsagesByClassName(componentFiles);
 
 const usages = componentFiles.map(({ file, className, componentSelector }) => ({
   filePath: file.getFilePath(),
@@ -41,27 +51,17 @@ function getComponentUsagesBySelector(componentFiles: ComponentSourceFile[]) {
   }, {} as Record<string, any>);
 }
 
-function getComponentUsagesByClassName(componentFiles: ComponentSourceFile[]) {
-  return componentFiles.reduce((result, file, index, allFiles) => {
-    result[file.file.getFilePath()] = getClassReferencingNodesInOtherFiles(
-      file.file,
-      file.className,
-      /\.spec\.ts$/
-    )
-      .filter((node) => {
-        return !Node.isImportSpecifier(node.getParent());
-      })
-      .filter(
-        (node) => !isNgModuleField(node, NgModuleMetadataField.declarations)
-      )
-      .filter(
-        (node) => !isNgModuleField(node, NgModuleMetadataField.exports)
-      ).length;
-
-    return result;
-  }, {} as any);
-}
-
+const pipeUsages = pipesFiles.map(({ file, className, pipeName }) => ({
+  filePath: file.getFilePath(),
+  nameUsage: pipeNameUsages[file.getFilePath()],
+  classUsage: pipeClassNameUsages[file.getFilePath()],
+  className,
+  pipeName,
+  probablyUnused:
+    pipeNameUsages[file.getFilePath()] +
+      pipeClassNameUsages[file.getFilePath()] <=
+    0,
+}));
 
 const unusedComponents = usages.filter(({ probablyUnused }) => probablyUnused);
 // temporary outout formatting
@@ -89,4 +89,66 @@ if (unusedComponents.length) {
       }\n`
     );
   });
+}
+
+const unusedPipes = pipeUsages.filter(({ probablyUnused }) => probablyUnused);
+// temporary outout formatting
+const maxPipeClassNameLength = Math.max(
+  ...unusedPipes.map((file) => file.className.length),
+  "Class name".length
+);
+const maxPipeNameLength = Math.max(
+  ...unusedPipes.map((file) => file.className.length),
+  "Pipe name".length
+);
+
+if (unusedPipes.length) {
+  stdout.write(`\n${unusedPipes.length} probably unused pipe(s):\n`);
+  stdout.write(
+    `${"Class name".padEnd(maxPipeClassNameLength)} | ${"Name".padEnd(
+      maxPipeNameLength
+    )} | file path\n`
+  );
+
+  unusedPipes.forEach((file) => {
+    stdout.write(
+      `${file.className.padEnd(
+        maxPipeClassNameLength
+      )} | ${file.pipeName.padEnd(maxPipeNameLength)} | ${file.filePath}\n`
+    );
+  });
+}
+
+function getUsagesByClassName(files: CommonSourceFile[]) {
+  return files.reduce((result, file, index, allFiles) => {
+    result[file.file.getFilePath()] = getClassReferencingNodesInOtherFiles(
+      file.file,
+      file.className,
+      /\.spec\.ts$/
+    )
+      .filter((node) => {
+        return !Node.isImportSpecifier(node.getParent());
+      })
+      .filter(
+        (node) => !isNgModuleField(node, NgModuleMetadataField.declarations)
+      )
+      .filter(
+        (node) => !isNgModuleField(node, NgModuleMetadataField.exports)
+      ).length;
+
+    return result;
+  }, {} as any);
+}
+
+function getPipeUsagesFromComponentTemplates(
+  pipeFiles: PipeSourceFile[],
+  componentFiles: ComponentSourceFile[]
+) {
+  return pipeFiles.reduce((result, file) => {
+    const pipeUsageRegexp = new RegExp(`\\|\\s*${file.pipeName}\\b`, "gm");
+    result[file.file.getFilePath()] = componentFiles.filter((f) => {
+      return pipeUsageRegexp.test(f.componentTemplateSource);
+    }).length;
+    return result;
+  }, {} as Record<string, any>);
 }

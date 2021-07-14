@@ -1,18 +1,37 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { Decorator, Project, SourceFile, SyntaxKind, Node,Identifier } from "ts-morph";
+import {
+  Decorator,
+  Project,
+  SourceFile,
+  SyntaxKind,
+  Node,
+  Identifier,
+} from "ts-morph";
 
-export interface ComponentSourceFile {
+export interface CommonSourceFile {
   file: SourceFile;
-  componentSelector: string;
-  componentTemplateSource: string;
   className: string;
 }
+export interface ComponentSourceFile extends CommonSourceFile{
+  componentSelector: string;
+  componentTemplateSource: string;
+}
+
+export interface PipeSourceFile extends CommonSourceFile{
+  pipeName: string;
+}
+
+export enum AngularDecorators {
+  component = "Component",
+  pipe = "Pipe",
+}
+
 export enum NgModuleMetadataField {
-	declarations = 'declarations',
-	exports = 'exports',
-	entryComponents = 'entryComponents',
-	imports = 'imports',
+  declarations = "declarations",
+  exports = "exports",
+  entryComponents = "entryComponents",
+  imports = "imports",
 }
 
 export function getProjectFiles(tsConfigFilePath: string): SourceFile[] {
@@ -134,16 +153,31 @@ export const getClassReferencingNodesInOtherFiles = (
       return references;
     }, []) || [];
 
-    
-    export const isNgModuleField = (
-        node: Identifier | Node,
-        field: NgModuleMetadataField
-    ): boolean => getAncestorArrayName(node) === field;
-    
-    export const getAncestorArrayName = (node: Identifier | Node) =>
-        node
-            .getParentIfKind(SyntaxKind.ArrayLiteralExpression)
-            ?.getParentIfKind(SyntaxKind.PropertyAssignment)
-            ?.getSymbol()
-            ?.getEscapedName();
-    
+export const isNgModuleField = (
+  node: Identifier | Node,
+  field: NgModuleMetadataField
+): boolean => getAncestorArrayName(node) === field;
+
+export const getAncestorArrayName = (node: Identifier | Node) =>
+  node
+    .getParentIfKind(SyntaxKind.ArrayLiteralExpression)
+    ?.getParentIfKind(SyntaxKind.PropertyAssignment)
+    ?.getSymbol()
+    ?.getEscapedName();
+
+export function getPipesFiles(sourceFiles: SourceFile[]): PipeSourceFile[] {
+  return sourceFiles
+    .filter(hasDecorator(AngularDecorators.pipe))
+    .map((file) => {
+      const pipeDecorator = getDecorator(AngularDecorators.pipe)(
+        file
+      ) as Decorator;
+
+      return {
+        file,
+        pipeName:
+          getPropertyValueFromDecorator(pipeDecorator, "name") || "",
+        className: getClassNameWithDecorator(AngularDecorators.pipe)(file),
+      };
+    });
+}
