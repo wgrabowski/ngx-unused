@@ -13,18 +13,20 @@ export interface CommonSourceFile {
   file: SourceFile;
   className: string;
 }
-export interface ComponentSourceFile extends CommonSourceFile{
+export interface ComponentSourceFile extends CommonSourceFile {
   componentSelector: string;
   componentTemplateSource: string;
 }
 
-export interface PipeSourceFile extends CommonSourceFile{
+export interface PipeSourceFile extends CommonSourceFile {
   pipeName: string;
 }
+export interface ServiceSourceFile extends CommonSourceFile {}
 
 export enum AngularDecorators {
   component = "Component",
   pipe = "Pipe",
+  service = "Injectable",
 }
 
 export enum NgModuleMetadataField {
@@ -32,6 +34,7 @@ export enum NgModuleMetadataField {
   exports = "exports",
   entryComponents = "entryComponents",
   imports = "imports",
+  providers = "providers",
 }
 
 export function getProjectFiles(tsConfigFilePath: string): SourceFile[] {
@@ -78,10 +81,11 @@ export function getComponentFiles(
 export function hasDecorator(
   decoratorName: string
 ): (file: SourceFile) => boolean {
-  return (file) =>
-    file
+  return (file) => {
+    return file
       .getClasses()
       .some((classDeclaration) => classDeclaration.getDecorator(decoratorName));
+  };
 }
 
 export function getDecorator(
@@ -175,9 +179,21 @@ export function getPipesFiles(sourceFiles: SourceFile[]): PipeSourceFile[] {
 
       return {
         file,
-        pipeName:
-          getPropertyValueFromDecorator(pipeDecorator, "name") || "",
+        pipeName: getPropertyValueFromDecorator(pipeDecorator, "name") || "",
         className: getClassNameWithDecorator(AngularDecorators.pipe)(file),
+      };
+    });
+}
+
+export function getServiceFiles(
+  sourceFiles: SourceFile[]
+): ServiceSourceFile[] {
+  return sourceFiles
+    .filter(hasDecorator(AngularDecorators.service))
+    .map((file) => {
+      return {
+        file,
+        className: getClassNameWithDecorator(AngularDecorators.service)(file),
       };
     });
 }
