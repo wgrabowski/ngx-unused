@@ -12,6 +12,8 @@ import {
   ComponentSourceFile,
   PipeSourceFile,
   CommonSourceFile,
+  getServiceFiles,
+  ServiceSourceFile,
 } from "./packages/ast/src";
 console.log(`[${packageJson.name} v.${packageJson.version}]`);
 if (process.argv.length < 3) {
@@ -22,6 +24,7 @@ stdout.write("Analyzing files. Be patient, it can take some time\n");
 const files = getProjectFiles(process.argv[2]);
 const componentFiles: ComponentSourceFile[] = getComponentFiles(files);
 const pipesFiles: PipeSourceFile[] = getPipesFiles(files);
+const serviceFiles: ServiceSourceFile[] = getServiceFiles(files);
 const pipeClassNameUsages = getUsagesByClassName(pipesFiles);
 const pipeNameUsages = getPipeUsagesFromComponentTemplates(
   pipesFiles,
@@ -30,6 +33,7 @@ const pipeNameUsages = getPipeUsagesFromComponentTemplates(
 
 const selectorUsages = getComponentUsagesBySelector(componentFiles);
 const classNameUsages = getUsagesByClassName(componentFiles);
+const serviceClassUsages = getUsagesByClassName(serviceFiles);
 
 const usages = componentFiles.map(({ file, className, componentSelector }) => ({
   filePath: file.getFilePath(),
@@ -61,6 +65,13 @@ const pipeUsages = pipesFiles.map(({ file, className, pipeName }) => ({
     pipeNameUsages[file.getFilePath()] +
       pipeClassNameUsages[file.getFilePath()] <=
     0,
+}));
+
+const serviceUsages = serviceFiles.map(({ file, className }) => ({
+  filePath: file.getFilePath(),
+  classUsage: serviceClassUsages[file.getFilePath()],
+  className,
+  probablyUnused: serviceClassUsages[file.getFilePath()] <= 0,
 }));
 
 const unusedComponents = usages.filter(({ probablyUnused }) => probablyUnused);
@@ -119,6 +130,25 @@ if (unusedPipes.length) {
   });
 }
 
+const unusedServices = serviceUsages.filter(({ probablyUnused }) => probablyUnused);
+// temporary outout formatting
+const maxServiceClassNameLength = Math.max(
+  ...unusedServices.map((file) => file.className.length)
+);
+
+if (unusedServices.length) {
+  stdout.write(`\n${unusedServices.length} probably unused service(s):\n`);
+  stdout.write(
+    `${"Class name".padEnd(maxServiceClassNameLength)} | file path\n`
+  );
+
+  unusedServices.forEach((file) => {
+    stdout.write(
+      `${file.className.padEnd(maxServiceClassNameLength)} | ${file.filePath}\n`
+    );
+  });
+}
+
 function getUsagesByClassName(files: CommonSourceFile[]) {
   return files.reduce((result, file, index, allFiles) => {
     result[file.file.getFilePath()] = getClassReferencingNodesInOtherFiles(
@@ -132,8 +162,9 @@ function getUsagesByClassName(files: CommonSourceFile[]) {
       .filter(
         (node) => !isNgModuleField(node, NgModuleMetadataField.declarations)
       )
+      .filter((node) => !isNgModuleField(node, NgModuleMetadataField.exports))
       .filter(
-        (node) => !isNgModuleField(node, NgModuleMetadataField.exports)
+        (node) => !isNgModuleField(node, NgModuleMetadataField.providers)
       ).length;
 
     return result;
