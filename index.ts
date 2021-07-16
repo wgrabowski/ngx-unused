@@ -53,8 +53,8 @@ const directiveUsages = directiveFiles.map(({ file, className, selector }) => ({
   className,
   selector,
   probablyUnused:
-    pipeNameUsages[file.getFilePath()] +
-    pipeClassNameUsages[file.getFilePath()] <=
+    directiveSelectorUsages[file.getFilePath()] +
+    directiveClassUsages[file.getFilePath()] <=
     0,
 }));
 
@@ -247,9 +247,9 @@ function getDirectiveUsagesFromComponentTemplates(
   componentFiles: ComponentSourceFile[]
 ) {
   return directiveFiles.reduce((result, file) => {
-    const pipeUsageRegexp = new RegExp(`<.*[\\s*[]${file.selector}\\b[\\s>\\]].*>`, "gs");
+    const directiveSelectorRegexp = new RegExp(`<.*[\\s*[]${file.selector}\\b[\\s>\\]].*>`, "gs");
     result[file.file.getFilePath()] = componentFiles.filter((f) => {
-      return pipeUsageRegexp.test(f.componentTemplateSource);
+      return directiveSelectorRegexp.test(f.componentTemplateSource);
     }).length;
     return result;
   }, {} as Record<string, any>);
