@@ -1,6 +1,6 @@
 {
   "name": "ngx-unused",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Detect unused components, pipes, services and directives in Angular code.",
   "bugs": {
     "url": "https://github.com/wgrabowski/ngx-unused/issues"
