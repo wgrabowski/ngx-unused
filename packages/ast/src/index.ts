@@ -21,10 +21,14 @@ export interface ComponentSourceFile extends CommonSourceFile {
 export interface PipeSourceFile extends CommonSourceFile {
   pipeName: string;
 }
-export interface ServiceSourceFile extends CommonSourceFile {}
-
+export interface ServiceSourceFile extends CommonSourceFile { }
+export interface DirectiveSourceFile extends CommonSourceFile {
+  selector: string;
+  isStructuralDirective: boolean;
+}
 export enum AngularDecorators {
   component = "Component",
+  directive = "Directive",
   pipe = "Pipe",
   service = "Injectable",
 }
@@ -194,6 +198,27 @@ export function getServiceFiles(
       return {
         file,
         className: getClassNameWithDecorator(AngularDecorators.service)(file),
+      };
+    });
+}
+
+export function getDirectiveFiles(
+  sourceFiles: SourceFile[]
+): DirectiveSourceFile[] {
+  return sourceFiles
+    .filter(hasDecorator(AngularDecorators.directive))
+    .map((file) => {
+      const directiveDecorator = getDecorator(AngularDecorators.directive)(
+        file
+      ) as Decorator;
+      // if there are multiple selectors, take first
+      const selector = (getPropertyValueFromDecorator(directiveDecorator, "selector") || '').replace("[", "").replace("]", "").split(",").map((selector: string) => selector.trim())[0];
+
+      return {
+        file,
+        selector,
+        isStructuralDirective: false,
+        className: getClassNameWithDecorator(AngularDecorators.directive)(file),
       };
     });
 }
