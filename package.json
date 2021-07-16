@@ -1,9 +1,17 @@
 {
   "name": "ngx-unused",
   "version": "0.0.2",
-  "description": "",
+  "description": "Detect unused components, pipes, services and directives in Angular code.",
+  "bugs": {
+    "url": "https://github.com/wgrabowski/ngx-unused/issues"
+  },
   "main": "index.js",
   "bin": "index.js",
+  "keywords": [
+    "angular",
+    "ngx",
+    "unused code"
+  ],
   "dependencies": {
     "ts-morph": "^11.0.0"
   },
@@ -16,5 +24,9 @@
     "start": "tsc index.ts --watch",
     "prepare": "tsc index.ts"
   },
-  "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>"
+  "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wgrabowski/ngx-unused.git"
+  }
 }
