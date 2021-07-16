@@ -14,6 +14,8 @@ import {
   CommonSourceFile,
   getServiceFiles,
   ServiceSourceFile,
+  DirectiveSourceFile,
+  getDirectiveFiles,
 } from "./packages/ast/src";
 console.log(`[${packageJson.name} v.${packageJson.version}]`);
 if (process.argv.length < 3) {
@@ -22,19 +24,15 @@ if (process.argv.length < 3) {
 }
 stdout.write("Analyzing files. Be patient, it can take some time\n");
 const files = getProjectFiles(process.argv[2]);
+// files by type
 const componentFiles: ComponentSourceFile[] = getComponentFiles(files);
 const pipesFiles: PipeSourceFile[] = getPipesFiles(files);
 const serviceFiles: ServiceSourceFile[] = getServiceFiles(files);
-const pipeClassNameUsages = getUsagesByClassName(pipesFiles);
-const pipeNameUsages = getPipeUsagesFromComponentTemplates(
-  pipesFiles,
-  componentFiles
-);
+const directiveFiles: DirectiveSourceFile[] = getDirectiveFiles(files);
 
+// component usages
 const selectorUsages = getComponentUsagesBySelector(componentFiles);
 const classNameUsages = getUsagesByClassName(componentFiles);
-const serviceClassUsages = getUsagesByClassName(serviceFiles);
-
 const usages = componentFiles.map(({ file, className, componentSelector }) => ({
   filePath: file.getFilePath(),
   selectorUsage: selectorUsages[file.getFilePath()],
@@ -45,16 +43,27 @@ const usages = componentFiles.map(({ file, className, componentSelector }) => ({
     selectorUsages[file.getFilePath()] + classNameUsages[file.getFilePath()] <=
     0,
 }));
+// directive usages
+const directiveSelectorUsages = getDirectiveUsagesFromComponentTemplates(directiveFiles, componentFiles);
+const directiveClassUsages = getUsagesByClassName(directiveFiles);
+const directiveUsages = directiveFiles.map(({ file, className, selector }) => ({
+  filePath: file.getFilePath(),
+  selectorUsage: directiveSelectorUsages[file.getFilePath()],
+  classUsage: directiveClassUsages[file.getFilePath()],
+  className,
+  selector,
+  probablyUnused:
+    pipeNameUsages[file.getFilePath()] +
+    pipeClassNameUsages[file.getFilePath()] <=
+    0,
+}));
 
-function getComponentUsagesBySelector(componentFiles: ComponentSourceFile[]) {
-  return componentFiles.reduce((result, file, index, allFiles) => {
-    result[file.file.getFilePath()] = allFiles.filter((f) =>
-      f.componentTemplateSource.includes(file.componentSelector)
-    ).length;
-    return result;
-  }, {} as Record<string, any>);
-}
-
+// pipe usages
+const pipeClassNameUsages = getUsagesByClassName(pipesFiles);
+const pipeNameUsages = getPipeUsagesFromComponentTemplates(
+  pipesFiles,
+  componentFiles
+);
 const pipeUsages = pipesFiles.map(({ file, className, pipeName }) => ({
   filePath: file.getFilePath(),
   nameUsage: pipeNameUsages[file.getFilePath()],
@@ -63,16 +72,24 @@ const pipeUsages = pipesFiles.map(({ file, className, pipeName }) => ({
   pipeName,
   probablyUnused:
     pipeNameUsages[file.getFilePath()] +
-      pipeClassNameUsages[file.getFilePath()] <=
+    pipeClassNameUsages[file.getFilePath()] <=
     0,
 }));
 
+// service usages
+const serviceClassUsages = getUsagesByClassName(serviceFiles);
 const serviceUsages = serviceFiles.map(({ file, className }) => ({
   filePath: file.getFilePath(),
   classUsage: serviceClassUsages[file.getFilePath()],
   className,
   probablyUnused: serviceClassUsages[file.getFilePath()] <= 0,
 }));
+
+
+
+
+
+
 
 const unusedComponents = usages.filter(({ probablyUnused }) => probablyUnused);
 // temporary outout formatting
@@ -95,8 +112,7 @@ if (unusedComponents.length) {
     stdout.write(
       `${file.className.padEnd(
         maxClassNameLength
-      )} | ${file.componentSelector.padEnd(maxSelectorLength)} | ${
-        file.filePath
+      )} | ${file.componentSelector.padEnd(maxSelectorLength)} | ${file.filePath
       }\n`
     );
   });
@@ -109,7 +125,7 @@ const maxPipeClassNameLength = Math.max(
   "Class name".length
 );
 const maxPipeNameLength = Math.max(
-  ...unusedPipes.map((file) => file.className.length),
+  ...unusedPipes.map((file) => file.pipeName.length),
   "Pipe name".length
 );
 
@@ -149,6 +165,48 @@ if (unusedServices.length) {
   });
 }
 
+
+const unusedDirectives = directiveUsages.filter(({ probablyUnused }) => probablyUnused)
+// temporary outout formatting
+const maxDirectiveClassName = Math.max(
+  ...unusedDirectives.map((file) => file.className.length),
+  "Class name".length
+);
+const maxDirectiveSelector = Math.max(
+  ...unusedDirectives.map((file) => file.selector.length),
+  "Selector".length
+);
+
+if (unusedDirectives.length) {
+  stdout.write(`\n${unusedDirectives.length} probably unused directive(s):\n`);
+  stdout.write(
+    `${"Class name".padEnd(maxDirectiveClassName)} | ${"Name".padEnd(
+      maxDirectiveClassName
+    )} | file path\n`
+  );
+
+  unusedDirectives.forEach((file) => {
+    stdout.write(
+      `${file.className.padEnd(
+        maxDirectiveSelector
+      )} | ${file.selector.padEnd(maxDirectiveSelector)} | ${file.filePath}\n`
+    );
+  });
+}
+
+
+
+// util functions
+function getComponentUsagesBySelector(componentFiles: ComponentSourceFile[]) {
+  return componentFiles.reduce((result, file, index, allFiles) => {
+    result[file.file.getFilePath()] = allFiles.filter((f) =>
+      f.componentTemplateSource.includes(file.componentSelector)
+    ).length;
+    return result;
+  }, {} as Record<string, any>);
+}
+
+
 function getUsagesByClassName(files: CommonSourceFile[]) {
   return files.reduce((result, file, index, allFiles) => {
     result[file.file.getFilePath()] = getClassReferencingNodesInOtherFiles(
@@ -177,6 +235,19 @@ function getPipeUsagesFromComponentTemplates(
 ) {
   return pipeFiles.reduce((result, file) => {
     const pipeUsageRegexp = new RegExp(`\\|\\s*${file.pipeName}\\b`, "gm");
+    result[file.file.getFilePath()] = componentFiles.filter((f) => {
+      return pipeUsageRegexp.test(f.componentTemplateSource);
+    }).length;
+    return result;
+  }, {} as Record<string, any>);
+}
+
+function getDirectiveUsagesFromComponentTemplates(
+  pipeFiles: DirectiveSourceFile[],
+  componentFiles: ComponentSourceFile[]
+) {
+  return directiveFiles.reduce((result, file) => {
+    const pipeUsageRegexp = new RegExp(`<.*[\\s*[]${file.selector}\\b[\\s>\\]].*>`, "gs");
     result[file.file.getFilePath()] = componentFiles.filter((f) => {
       return pipeUsageRegexp.test(f.componentTemplateSource);
     }).length;
