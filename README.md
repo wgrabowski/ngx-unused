@@ -1,3 +1,6 @@
+# Version 2.0.0 is in works
+
+# Docmentation for version 1.0.0
 # ngx-unused
 Find declared but unused Angular code.
 

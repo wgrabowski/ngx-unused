@@ -1,7 +1,7 @@
 {
   "name": "ngx-unused",
   "version": "1.0.0",
-  "description": "Detect unused components, pipes, services and directives in Angular code.",
+  "description": "Detect unused classes (components, pipes, services and directives) defined in Angular workspace.",
   "bugs": {
     "url": "https://github.com/wgrabowski/ngx-unused/issues"
   },
@@ -10,20 +10,21 @@
   "keywords": [
     "angular",
     "ngx",
-    "unused code"
+    "unused code",
+    "unused angular classes"
   ],
   "dependencies": {
-    "ts-morph": "^11.0.0"
+    "glob": "^10.3.10",
+    "typescript": "^4.3.4"
   },
   "devDependencies": {
     "@types/node": "^15.12.5",
     "prettier": "^2.3.2",
-    "prettier-plugin-organize-imports": "^2.2.0",
-    "typescript": "^4.3.4"
+    "prettier-plugin-organize-imports": "^2.2.0"
   },
   "scripts": {
-    "start": "tsc cli.ts --watch",
-    "prepare": "tsc cli.ts",
+    "start": "tsc index.ts --watch",
+    "prepareOnly": "tsc index.ts",
     "format": "prettier --write ."
   },
   "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>",
