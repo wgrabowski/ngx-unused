@@ -1,52 +1,53 @@
 {
-  "name": "ngx-unused",
-  "version": "1.0.0",
-  "description": "Detect unused classes (components, pipes, services and directives) defined in Angular workspace.",
-  "bugs": {
-    "url": "https://github.com/wgrabowski/ngx-unused/issues"
-  },
-  "main": "./cli.js",
-  "bin": "./cli.js",
-  "type": "module",
-  "keywords": [
-    "angular",
-    "ngx",
-    "unused code",
-    "unused angular classes"
-  ],
-  "dependencies": {
-    "glob": "^10.3.10",
-    "typescript": "^4.3.4"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^17.7.2",
-    "@commitlint/config-conventional": "^17.7.0",
-    "@types/node": "^15.12.5",
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
-    "commitizen": "^4.3.0",
-    "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.51.0",
-    "eslint-config-prettier": "^9.0.0",
-    "husky": "^8.0.0",
-    "lint-staged": "^14.0.1",
-    "prettier": "^2.8.8",
-    "prettier-plugin-organize-imports": "^2.2.0"
-  },
-  "scripts": {
-    "start": "tsc -p tsconfig.json --watch",
-    "prepareOnly": "tsc -p tsconfig.json",
-    "format": "prettier --write .",
-    "prepare": "husky install"
-  },
-  "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/wgrabowski/ngx-unused.git"
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
-  }
+	"name": "ngx-unused",
+	"version": "1.0.0",
+	"description": "Detect unused classes (components, pipes, services and directives) defined in Angular workspace.",
+	"bugs": {
+		"url": "https://github.com/wgrabowski/ngx-unused/issues"
+	},
+	"main": "./bin/cli.js",
+	"bin": "./bin/cli.js",
+	"type": "module",
+	"keywords": [
+		"angular",
+		"ngx",
+		"unused code",
+		"unused angular classes"
+	],
+	"dependencies": {
+		"glob": "^10.3.10",
+		"minimist": "^1.2.8",
+		"typescript": "^4.3.4"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^17.7.2",
+		"@commitlint/config-conventional": "^17.7.0",
+		"@types/node": "^15.12.5",
+		"@typescript-eslint/eslint-plugin": "^6.7.5",
+		"@typescript-eslint/parser": "^6.7.5",
+		"commitizen": "^4.3.0",
+		"cz-conventional-changelog": "^3.3.0",
+		"eslint": "^8.51.0",
+		"eslint-config-prettier": "^9.0.0",
+		"husky": "^8.0.0",
+		"lint-staged": "^14.0.1",
+		"prettier": "^2.8.8",
+		"prettier-plugin-organize-imports": "^2.2.0"
+	},
+	"scripts": {
+		"start": "tsc -p tsconfig.json --watch",
+		"prepareOnly": "tsc -p tsconfig.json",
+		"format": "prettier --write .",
+		"prepare": "husky install"
+	},
+	"author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wgrabowski/ngx-unused.git"
+	},
+	"config": {
+		"commitizen": {
+			"path": "./node_modules/cz-conventional-changelog"
+		}
+	}
 }
