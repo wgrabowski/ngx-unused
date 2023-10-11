@@ -23,8 +23,8 @@
     "prettier-plugin-organize-imports": "^2.2.0"
   },
   "scripts": {
-    "start": "tsc index.ts --watch",
-    "prepareOnly": "tsc index.ts",
+    "start": "tsc -p tsconfig.json --watch",
+    "prepareOnly": "tsc -p tsconfig.json",
     "format": "prettier --write ."
   },
   "author": "Wojciech Grabowski <wojtek@wojciech-grabowski.pl>",
