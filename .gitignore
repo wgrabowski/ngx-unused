@@ -2,3 +2,4 @@
 !bin/*.js
 node_modules
 dist
+.idea
