@@ -4,6 +4,7 @@
 		"module": "ES6",
 		"strict": true,
 		"types": ["node"],
+		"lib": ["ES2019"],
 		"esModuleInterop": true,
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
@@ -11,5 +12,5 @@
 		"forceConsistentCasingInFileNames": true,
 		"outDir": "dist"
 	},
-	"include": ["index.ts"]
+	"include": ["index.ts", "src/**/*.ts"]
 }

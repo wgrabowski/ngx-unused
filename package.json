@@ -15,7 +15,6 @@
 		"unused angular classes"
 	],
 	"dependencies": {
-		"glob": "^10.3.10",
 		"minimist": "^1.2.8",
 		"typescript": "^4.3.4"
 	},
@@ -29,6 +28,7 @@
 		"cz-conventional-changelog": "^3.3.0",
 		"eslint": "^8.51.0",
 		"eslint-config-prettier": "^9.0.0",
+		"glob": "^10.3.10",
 		"husky": "^8.0.0",
 		"lint-staged": "^14.0.1",
 		"prettier": "^2.8.8",
