@@ -1,9 +1,9 @@
 import { ClassDeclaration, SourceFile } from 'ts-morph';
-import { RELEVANT_DECORATOR_NAMES } from '../constants';
+import { RELEVANT_DECORATOR_NAMES } from '../constants.js';
 import { ClassType, Result } from '../types';
-import { hasUsagesBySelectors } from './hasUsagesBySelectors';
-import { hasUsagesByPipeName } from './hasUsagesInTemplatesByPipeName';
-import { hasUsagesInTs } from './hasUsagesInTs';
+import { hasUsagesBySelectors } from './hasUsagesBySelectors.js';
+import { hasUsagesByPipeName } from './hasUsagesInTemplatesByPipeName.js';
+import { hasUsagesInTs } from './hasUsagesInTs.js';
 
 export function findUnusedClasses(sourceFiles: SourceFile[]): Result[] {
 	const classes = sourceFiles.flatMap(file => file.getClasses());

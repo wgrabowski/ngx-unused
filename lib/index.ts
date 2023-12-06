@@ -2,7 +2,7 @@ import minimist from 'minimist';
 import { argv, exit } from 'process';
 import { getRuntimeConfig, validate } from './cli.js';
 import { createProject } from './createProject.js';
-import { findUnusedClasses } from './findUsages/findUnusedClasses';
+import { findUnusedClasses } from './findUsages/index.js';
 import { help, print, printResults } from './output.js';
 import { CliArgs } from './types.js';
 
@@ -21,6 +21,7 @@ if (cliArgs.help || cliArgs.h) {
 
 const inputValidation = validate(cliArgs);
 if (!inputValidation.valid) {
+	help();
 	exit(1);
 }
 const { tsConfigFilePath, sourceRoots, decorateOutput } =

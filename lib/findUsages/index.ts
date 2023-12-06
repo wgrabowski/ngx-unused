@@ -1,1 +1,1 @@
-export * from './findUnusedClasses';
+export * from './findUnusedClasses.js';
