@@ -1,2 +1,5 @@
 *.ts
 !dist
+.*
+tsconfig.json
+commitlint.config.cjs

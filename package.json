@@ -16,6 +16,8 @@
 	],
 	"dependencies": {
 		"minimist": "^1.2.8",
+		"node-html-parser": "^6.1.11",
+		"ts-morph": "^21.0.1",
 		"typescript": "^4.3.4"
 	},
 	"devDependencies": {
@@ -35,8 +37,8 @@
 		"prettier-plugin-organize-imports": "^2.2.0"
 	},
 	"scripts": {
-		"start": "tsc -p tsconfig.json --watch",
-		"prepareOnly": "tsc -p tsconfig.json",
+		"start": "tsc -p tsconfig.json --watch --removeComments",
+		"prepareOnly": "tsc -p tsconfig.json --removeComments",
 		"format": "prettier --write .",
 		"prepare": "husky install"
 	},
