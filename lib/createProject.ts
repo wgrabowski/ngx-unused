@@ -11,6 +11,8 @@ export function createProject({
 	const project: Project = new Project({
 		tsConfigFilePath,
 		skipAddingFilesFromTsConfig: true,
+		skipFileDependencyResolution: true,
+		skipLoadingLibFiles: true,
 	});
 	project.addSourceFilesAtPaths(getSourceFiles(sourceRoots));
 	return project;

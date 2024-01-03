@@ -12,7 +12,11 @@
 		"angular",
 		"ngx",
 		"unused code",
-		"unused angular classes"
+		"unused angular classes",
+		"unused angular component",
+		"unused angular pipe",
+		"unused angular directive",
+		"unused angular service"
 	],
 	"dependencies": {
 		"minimist": "^1.2.8",

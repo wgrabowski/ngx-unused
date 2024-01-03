@@ -3,7 +3,13 @@ import { argv, exit } from 'process';
 import { getRuntimeConfig, validate } from './cli.js';
 import { createProject } from './createProject.js';
 import { findUnusedClasses } from './findUsages/index.js';
-import { help, print, printResults } from './output.js';
+import {
+	help,
+	invalidTsConfig,
+	printNoFiles,
+	printResults,
+	usage,
+} from './output.js';
 import { CliArgs } from './types.js';
 
 const cliArgs: CliArgs = minimist(argv.slice(2), {
@@ -20,9 +26,13 @@ if (cliArgs.help || cliArgs.h) {
 }
 
 const inputValidation = validate(cliArgs);
+if (!inputValidation.tsConfigFilePath) {
+	invalidTsConfig();
+	exit(2);
+}
 if (!inputValidation.valid) {
-	help();
-	exit(1);
+	usage();
+	exit(2);
 }
 const { tsConfigFilePath, sourceRoots, decorateOutput } =
 	getRuntimeConfig(cliArgs);
@@ -34,10 +44,11 @@ const project = createProject({
 });
 const sourceFiles = project.getSourceFiles();
 
-print(`${sourceFiles.length} matched files\n`, decorateOutput);
-print('Looking for unused classes...\n', decorateOutput);
-
+if (sourceFiles.length === 0) {
+	printNoFiles();
+	exit(0);
+}
 const results = findUnusedClasses(sourceFiles);
 
 printResults(results);
-exit(0);
+exit(results.length ? 1 : 0);

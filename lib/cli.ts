@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import { stdout } from 'process';
 import { CliArgs, RuntimeConfig } from './types';
 
@@ -17,7 +18,7 @@ export function getRuntimeConfig(cliArgs: CliArgs): RuntimeConfig {
 
 export function validate(cliArgs: CliArgs): InputValidation {
 	return {
-		tsConfigFilePath: !!cliArgs.project,
+		tsConfigFilePath: !!cliArgs.project && existsSync(cliArgs.project),
 		sourceRoots: !!cliArgs._.length,
 		valid: !!cliArgs.project && !!cliArgs._.length,
 	};
