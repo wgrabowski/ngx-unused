@@ -2,7 +2,7 @@ import { Decorator, ObjectLiteralExpression, SyntaxKind } from 'ts-morph';
 
 export function getPropertyFromDecoratorCall(
 	decorator: Decorator,
-	propertyName: 'selector' | 'name' | 'template' | 'templateUrl'
+	propertyName: 'selector' | 'name' | 'template' | 'templateUrl' | 'standalone'
 ) {
 	const decoratorCallArguments = decorator.getArguments();
 	const matchedProperty = decoratorCallArguments
@@ -14,7 +14,10 @@ export function getPropertyFromDecoratorCall(
 		)
 		.find(structure => structure!.getName() === propertyName);
 
-	return matchedProperty
-		?.getInitializerIfKind(SyntaxKind.StringLiteral)
-		?.getLiteralValue();
+	return (
+		matchedProperty?.getInitializerIfKind(SyntaxKind.StringLiteral) ||
+		matchedProperty?.getInitializerIfKind(SyntaxKind.TrueKeyword)
+	)
+		?.getLiteralValue()
+		.toString();
 }
