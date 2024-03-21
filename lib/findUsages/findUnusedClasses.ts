@@ -1,7 +1,7 @@
 import { stdout } from 'process';
 import { ClassDeclaration, SourceFile } from 'ts-morph';
 import { print } from '../output.js';
-import { ClassTypes, Result } from '../types.js';
+import { ClassTypes, Result, TsConfigFileResolverArgs } from '../types.js';
 import { ModuleService } from './services/module.service.js';
 import { RelevantClassesService } from './services/relevant-classes.service.js';
 import { TemplateService } from './services/template.service.js';
@@ -14,9 +14,15 @@ import {
 	hasUsagesInTs,
 } from './utils/relevant-class.utils.js';
 
-export function findUnusedClasses(sourceFiles: SourceFile[]): Result[] {
+export function findUnusedClasses(
+	sourceFiles: SourceFile[],
+	tsConfigFileResolverArgs: TsConfigFileResolverArgs
+): Result[] {
 	const relevantClassesService = new RelevantClassesService(sourceFiles);
-	const moduleService = new ModuleService(sourceFiles);
+	const moduleService = new ModuleService(
+		sourceFiles,
+		tsConfigFileResolverArgs
+	);
 	const templateService = new TemplateService(
 		relevantClassesService.componentClasses
 	);

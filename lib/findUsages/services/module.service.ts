@@ -1,14 +1,30 @@
-import { ClassDeclaration, Decorator, SourceFile, SyntaxKind } from 'ts-morph';
+import {
+	ClassDeclaration,
+	Decorator,
+	JsxAttribute,
+	Node,
+	SourceFile,
+	SyntaxKind,
+	ts,
+} from 'ts-morph';
+import {
+	StandAloneComponentArgs,
+	TsConfigFileResolverArgs,
+} from '../../types.js';
 import { isModuleDecorator } from '../utils/module.utils.js';
 import { getPropertyFromDecoratorCall } from '../utils/relevant-class.utils.js';
 import { isTestFile } from '../utils/source-file.utils.js';
-export class ModuleService {
-	private loadedComponents: {
-		importPath: string;
-		componentClassName: string;
-	}[];
 
-	constructor(sourceFiles: SourceFile[]) {
+export class ModuleService {
+	private loadedComponents: StandAloneComponentArgs[];
+
+	private fileResolverArgs: TsConfigFileResolverArgs;
+
+	constructor(
+		sourceFiles: SourceFile[],
+		tsConfigFileResolverArgs: TsConfigFileResolverArgs
+	) {
+		this.fileResolverArgs = tsConfigFileResolverArgs;
 		const modulesClasses = sourceFiles
 			.filter(file => !isTestFile(file))
 			.flatMap(file => file.getClasses())
@@ -20,13 +36,36 @@ export class ModuleService {
 			.flat();
 	}
 	getLoadedStandaloneComponentsByRoute(decorator: ClassDeclaration) {
-		const loadedComponents: {
-			importPath: string;
-			componentClassName: string;
-		}[] = [];
+		const loadedComponents: StandAloneComponentArgs[] = [];
 		const importRegex = /'([^']+)'/;
 
-		const nodes = decorator
+		const nodesFromRoutes = (
+			decorator
+				.getDescendants()
+				.filter(d => d.getKind() === SyntaxKind.CallExpression)
+				.find(x => x.getText()?.includes('RouterModule.forChild'))
+				?.getDescendants()
+				?.filter(d => d.getKind() === SyntaxKind.Identifier)
+				?.filter(x => x.getType().getAliasSymbol()?.getName() === 'Routes')[0]
+				?.getSymbol()
+				?.getValueDeclaration() as JsxAttribute
+		)
+			?.getInitializer()
+			?.getDescendants()
+			.filter((d: Node) => d.getKind() === SyntaxKind.PropertyAssignment)
+			.filter((x: Node) => x.getText().includes('loadComponent')) as
+			| Array<Node>
+			| undefined;
+
+		decorator
+			.getDescendants()
+			.filter(d => d.getKind() === SyntaxKind.CallExpression)
+			.find(x => x.getText().includes('RouterModule.forChild'))
+			?.getDescendants()
+			.filter(d => d.getKind() === SyntaxKind.Identifier)
+			.filter(x => x.getType().getAliasSymbol()?.getName() === 'Routes');
+
+		const nodesFromDecorator = decorator
 			?.getDescendants()
 			.filter(
 				d =>
@@ -36,25 +75,86 @@ export class ModuleService {
 						.find(c => c.getText() === 'loadComponent')
 			);
 
+		const nodes = (nodesFromRoutes ?? []).concat(nodesFromDecorator ?? []);
+
 		if (nodes?.length > 0) {
 			nodes.forEach(node => {
 				const accessExpressions = node
 					?.getDescendants()
 					.filter(d => d.getKind() === SyntaxKind.PropertyAccessExpression);
-				if (accessExpressions) {
+				if (accessExpressions?.length > 0) {
 					const matchImport = accessExpressions[0].getText().match(importRegex);
-					loadedComponents.push({
-						importPath: matchImport
-							? matchImport[1].replace(/\.\.\/|\.\//g, '')
-							: '',
-						componentClassName: accessExpressions[1]
-							?.getChildren()[2]
-							?.getText(),
-					});
+					if (matchImport) {
+						const nodeFilePath = accessExpressions[0]
+							.getSourceFile()
+							.getFilePath();
+						const path = matchImport ? matchImport[1] : '';
+						const componentClassName = accessExpressions[1]
+							?.getChildren()
+							.filter(d => d.getKind() === SyntaxKind.Identifier)[1]
+							.getText();
+
+						const fullImportPath = this.getFullImportPath(path, nodeFilePath);
+						loadedComponents.push({
+							fullImportPath: fullImportPath,
+							componentClassName: componentClassName,
+						});
+					}
 				}
 			});
 		}
 		return loadedComponents;
+	}
+	getFullImportPath(path: string, nodeFilePath: string) {
+		let filePath: string | undefined = '';
+		try {
+			const isAlias = path.includes('@');
+			const moduleName = isAlias
+				? path
+				: this.convertToAbsolutePath(path, nodeFilePath);
+
+			const resolveModuleName = ts.resolveModuleName(
+				moduleName,
+				this.fileResolverArgs.containingFile,
+				this.fileResolverArgs.compilerOptions,
+				ts.sys
+			);
+			filePath = resolveModuleName.resolvedModule?.resolvedFileName;
+		} catch (err) {
+			console.log(err);
+		}
+		return filePath;
+	}
+
+	convertToAbsolutePath(relativePath: string, sourceFilePath: string) {
+		const relativePathSplited = relativePath.split('/');
+		const sourceFilePathSplited = sourceFilePath.split('/');
+		const absolutePathSplited = [];
+		const currentDirectoryMark = ['.', ''];
+
+		const jumpBackCount = currentDirectoryMark.some(
+			i => i === relativePathSplited[0]
+		)
+			? 1
+			: relativePathSplited.filter(i => i === '..').length + 1;
+		const startCopyFromIndex = currentDirectoryMark.some(
+			i => i === relativePathSplited[0]
+		)
+			? 1
+			: jumpBackCount - 1;
+		const endCopyIndex = sourceFilePathSplited.length - jumpBackCount;
+
+		for (let index = 0; index < endCopyIndex; index++) {
+			absolutePathSplited.push(sourceFilePathSplited[index]);
+		}
+		for (
+			let index = startCopyFromIndex;
+			index < relativePathSplited.length;
+			index++
+		) {
+			absolutePathSplited.push(relativePathSplited[index]);
+		}
+		return absolutePathSplited.join('/');
 	}
 
 	isStandaloneComponentUseAsRoute(
@@ -71,7 +171,7 @@ export class ModuleService {
 			useAsRoute = this.loadedComponents.some(
 				c =>
 					c.componentClassName === classDeclaration.getName() &&
-					classDeclaration.getSourceFile().getFilePath().includes(c.importPath)
+					classDeclaration.getSourceFile().getFilePath() === c.fullImportPath
 			);
 		}
 		return useAsRoute;

@@ -1,4 +1,5 @@
 import { ParsedArgs } from 'minimist';
+import { CompilerOptions, Project } from 'ts-morph';
 
 export interface RuntimeConfig {
 	sourceRoots: string[];
@@ -29,4 +30,15 @@ export interface CliArgs extends ParsedArgs {
 	project?: string;
 	sourceRoots?: string[];
 	decorateOutput?: string;
+}
+
+export interface TsConfigFileResolverArgs {
+	project: Project;
+	containingFile: string;
+	compilerOptions: CompilerOptions;
+}
+
+export interface StandAloneComponentArgs {
+	fullImportPath: string | undefined;
+	componentClassName: string | undefined;
 }
