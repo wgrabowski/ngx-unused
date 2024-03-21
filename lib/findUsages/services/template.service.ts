@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { parse } from 'node-html-parser';
 import { dirname, join, resolve } from 'path';
 import { Decorator } from 'ts-morph';
-import { getPropertyFromDecoratorCall } from './getPropertyFromDecorator.js';
+import { getPropertyFromDecoratorCall } from '../utils/relevant-class.utils.js';
 
 export class TemplateService {
 	private templates: string[];
@@ -13,7 +13,17 @@ export class TemplateService {
 		);
 	}
 
-	matchesSelectors(selectors: string[]) {
+	public hasUsagesByPipeName(decorator: Decorator): boolean {
+		const name = getPropertyFromDecoratorCall(decorator, 'name');
+		return this.matchesPipeName(name ?? '');
+	}
+
+	public hasUsagesBySelectors(decorator: Decorator): boolean {
+		const selector = getPropertyFromDecoratorCall(decorator, 'selector');
+		return this.matchesSelectors(selector?.split(',') ?? []);
+	}
+
+	private matchesSelectors(selectors: string[]) {
 		return this.templates.some(template =>
 			this.templateMatchesSelectors(template, selectors)
 		);

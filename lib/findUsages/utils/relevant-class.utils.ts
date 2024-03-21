@@ -1,14 +1,46 @@
-// if class is used in ts - excluding imports, exports, and declarations in NgModule decorator
-// with exception useClass,useExisting in providers
-import { ClassDeclaration, Node, SyntaxKind } from 'ts-morph';
+import {
+	ClassDeclaration,
+	Decorator,
+	Node,
+	ObjectLiteralExpression,
+	SyntaxKind,
+} from 'ts-morph';
+import { MODULE_DECORATOR, RELEVANT_DECORATOR_NAMES } from '../../constants.js';
+import { ClassTypes } from '../../types.js';
+import { isTestFile } from './source-file.utils.js';
+
+export function getRelevantDecorator(classDeclaration: ClassDeclaration) {
+	return classDeclaration.getDecorator(decorator =>
+		RELEVANT_DECORATOR_NAMES.includes(decorator.getFullName() as ClassTypes)
+	);
+}
+
+export function getPropertyFromDecoratorCall(
+	decorator: Decorator,
+	propertyName: 'selector' | 'name' | 'template' | 'templateUrl' | 'standalone'
+) {
+	const decoratorCallArguments = decorator.getArguments();
+	const matchedProperty = decoratorCallArguments
+		.flatMap(argument =>
+			(argument as ObjectLiteralExpression)
+				.getProperties()
+				.map(prop => prop.asKind(SyntaxKind.PropertyAssignment))
+				.filter(value => value !== undefined)
+		)
+		.find(structure => structure!.getName() === propertyName);
+
+	return (
+		matchedProperty?.getInitializerIfKind(SyntaxKind.StringLiteral) ||
+		matchedProperty?.getInitializerIfKind(SyntaxKind.TrueKeyword)
+	)
+		?.getLiteralValue()
+		.toString();
+}
 
 export function hasUsagesInTs(declaration: ClassDeclaration): boolean {
 	const referencingNodes = declaration.findReferencesAsNodes().filter(node => {
 		const sourceFile = node.getSourceFile();
-		return (
-			!sourceFile.isDeclarationFile() &&
-			!sourceFile.getBaseName().includes('.spec.ts')
-		);
+		return !sourceFile.isDeclarationFile() && !isTestFile(sourceFile);
 	});
 	return referencingNodes.some(node => isReferecingNodeRelevant(node));
 }
@@ -60,7 +92,7 @@ function isInNgModuleDecoratorCall(node: Node): boolean {
 		node.getFirstAncestor(
 			ancestor =>
 				ancestor.isKind(SyntaxKind.Decorator) &&
-				ancestor.getFullName() === 'NgModule'
+				ancestor.getFullName() === MODULE_DECORATOR
 		) !== undefined
 	);
 }

@@ -1,70 +1,73 @@
 import { stdout } from 'process';
-import { ClassDeclaration, Decorator, SourceFile } from 'ts-morph';
-import { RELEVANT_DECORATOR_NAMES } from '../constants.js';
+import { ClassDeclaration, SourceFile } from 'ts-morph';
 import { print } from '../output.js';
-import { ClassType, Result } from '../types';
-import { getPropertyFromDecoratorCall } from './getPropertyFromDecorator.js';
-import { hasUsagesByPipeName } from './hasUsagesByPipeName.js';
-import { hasUsagesBySelectors } from './hasUsagesBySelectors.js';
-import { hasUsagesInTs } from './hasUsagesInTs.js';
-import { TemplateService } from './templateService.js';
+import { ClassTypes, Result } from '../types.js';
+import { ModuleService } from './services/module.service.js';
+import { RelevantClassesService } from './services/relevant-classes.service.js';
+import { TemplateService } from './services/template.service.js';
+import {
+	hasUsagesByCanActivateCall,
+	isGuardClass,
+} from './utils/guard.utils.js';
+import {
+	getRelevantDecorator,
+	hasUsagesInTs,
+} from './utils/relevant-class.utils.js';
 
 export function findUnusedClasses(sourceFiles: SourceFile[]): Result[] {
-	const classes = sourceFiles
-		.filter(file => !file.getBaseName().includes('.spec.ts'))
-		.flatMap(file => file.getClasses())
-		.filter(declaration => getRelevantDecorator(declaration) !== undefined);
-
-	const componentClasses = classes
-		.filter(
-			declaration =>
-				getRelevantDecorator(declaration)?.getFullName() === 'Component'
-		)
-		.map(getRelevantDecorator)
-		.filter(decorator => decorator !== undefined);
-	const templateService = new TemplateService(componentClasses as Decorator[]);
+	const relevantClassesService = new RelevantClassesService(sourceFiles);
+	const moduleService = new ModuleService(sourceFiles);
+	const templateService = new TemplateService(
+		relevantClassesService.componentClasses
+	);
 
 	if (stdout.isTTY) {
 		print(
-			`Found ${classes.length} classes from ${sourceFiles.length} files.\n`
+			`Found ${relevantClassesService.releventClasses.length} classes from ${sourceFiles.length} files.\n`
 		);
 	}
-	return classes
+	return relevantClassesService.releventClasses
 		.filter((declaration, index, { length }) => {
 			const percentage = Math.round(((index + 1) / length) * 100);
 			if (stdout.isTTY) {
 				print(`Analyzing ${index + 1}/${length} (${percentage}%)`, true);
 				if (index === length - 1) stdout.write('\n');
 			}
-			return !isUsed(declaration, templateService);
+			return !isUsed(declaration, templateService, moduleService);
 		})
 		.map(asResult);
 }
 
 function isUsed(
 	declaration: ClassDeclaration,
-	templateService: TemplateService
+	templateService: TemplateService,
+	moduleService: ModuleService
 ): boolean {
 	const relevantDecorator = getRelevantDecorator(declaration)!;
 	const classType = relevantDecorator.getFullName();
 	const hasTsUsages = hasUsagesInTs(declaration);
+
 	if (hasTsUsages) {
 		return true;
 	}
 
-	const isStandalone = getPropertyFromDecoratorCall(
-		relevantDecorator,
-		'standalone'
-	);
-	if (isStandalone === 'true') {
-		return true;
+	if (
+		classType === ClassTypes.Component ||
+		classType === ClassTypes.Directive
+	) {
+		return (
+			templateService.hasUsagesBySelectors(relevantDecorator) ||
+			moduleService.isStandaloneComponentUseAsRoute(
+				declaration,
+				relevantDecorator
+			)
+		);
 	}
-
-	if (classType === 'Component' || classType === 'Directive') {
-		return hasUsagesBySelectors(relevantDecorator, templateService);
+	if (classType === ClassTypes.Pipe) {
+		return templateService.hasUsagesByPipeName(relevantDecorator);
 	}
-	if (classType === 'Pipe') {
-		return hasUsagesByPipeName(relevantDecorator, templateService);
+	if (isGuardClass(declaration)) {
+		return hasUsagesByCanActivateCall(declaration);
 	}
 
 	return false;
@@ -74,15 +77,9 @@ function asResult(declaration: ClassDeclaration): Result {
 	const sourceFile = declaration.getSourceFile();
 	return {
 		// classess without decorators will not be passed to this function
-		classType: getRelevantDecorator(declaration)!.getFullName() as ClassType,
+		classType: getRelevantDecorator(declaration)!.getFullName() as ClassTypes,
 		className: declaration.getName() ?? '',
 		fileName: sourceFile.getBaseName(),
 		directory: sourceFile.getDirectory().getPath().toString(),
 	};
-}
-
-function getRelevantDecorator(classDeclaration: ClassDeclaration) {
-	return classDeclaration.getDecorator(decorator =>
-		RELEVANT_DECORATOR_NAMES.includes(decorator.getFullName() as ClassType)
-	);
 }

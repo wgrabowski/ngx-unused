@@ -8,13 +8,20 @@ export interface RuntimeConfig {
 	// ci -mode , whatever
 }
 
-export type ClassType = 'Component' | 'Injectable' | 'Pipe' | 'Directive';
+// export type ClassType = 'Component' | 'Injectable' | 'Pipe' | 'Directive';
+
+export enum ClassTypes {
+	Component = 'Component',
+	Injectable = 'Injectable',
+	Pipe = 'Pipe',
+	Directive = 'Directive',
+}
 
 export interface Result {
 	fileName: string;
 	directory: string;
 	className: string;
-	classType: ClassType;
+	classType: ClassTypes;
 }
 
 export interface CliArgs extends ParsedArgs {
