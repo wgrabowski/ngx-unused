@@ -3,6 +3,7 @@ import { ClassDeclaration, Decorator, SourceFile } from 'ts-morph';
 import { RELEVANT_DECORATOR_NAMES } from '../constants.js';
 import { print } from '../output.js';
 import { ClassType, Result } from '../types';
+import { getPropertyFromDecoratorCall } from './getPropertyFromDecorator.js';
 import { hasUsagesByPipeName } from './hasUsagesByPipeName.js';
 import { hasUsagesBySelectors } from './hasUsagesBySelectors.js';
 import { hasUsagesInTs } from './hasUsagesInTs.js';
@@ -48,6 +49,14 @@ function isUsed(
 	const classType = relevantDecorator.getFullName();
 	const hasTsUsages = hasUsagesInTs(declaration);
 	if (hasTsUsages) {
+		return true;
+	}
+
+	const isStandalone = getPropertyFromDecoratorCall(
+		relevantDecorator,
+		'standalone'
+	);
+	if (isStandalone === 'true') {
 		return true;
 	}
 
