@@ -22,8 +22,8 @@ function getSourceFiles(sourceRoots: string[]): string[] {
 	const existingDirectories = sourceRoots.filter(directory =>
 		existsSync(directory)
 	);
-	const includePatterns = existingDirectories.map(directory =>
-		path.resolve(`${directory}/**/*.ts`)
+	const includePatterns = existingDirectories.map(
+		directory => `${path.resolve(directory)}/**/*.ts`
 	);
 	const excludePatterns = existingDirectories.flatMap(directory => [
 		`${directory}/**/node_modules/**`,
