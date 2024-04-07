@@ -2,8 +2,8 @@ import { stdout } from 'process';
 import { ClassDeclaration, SourceFile } from 'ts-morph';
 import { print } from '../output.js';
 import { ClassTypes, Result, TsConfigFileResolverArgs } from '../types.js';
-import { ModuleService } from './services/module.service.js';
 import { RelevantClassesService } from './services/relevant-classes.service.js';
+import { StandaloneComponentsService } from './services/standalone-components.service.js';
 import { TemplateService } from './services/template.service.js';
 import {
 	hasUsagesByCanActivateCall,
@@ -19,7 +19,7 @@ export function findUnusedClasses(
 	tsConfigFileResolverArgs: TsConfigFileResolverArgs
 ): Result[] {
 	const relevantClassesService = new RelevantClassesService(sourceFiles);
-	const moduleService = new ModuleService(
+	const standaloneComponentsService = new StandaloneComponentsService(
 		sourceFiles,
 		tsConfigFileResolverArgs
 	);
@@ -39,7 +39,7 @@ export function findUnusedClasses(
 				print(`Analyzing ${index + 1}/${length} (${percentage}%)`, true);
 				if (index === length - 1) stdout.write('\n');
 			}
-			return !isUsed(declaration, templateService, moduleService);
+			return !isUsed(declaration, templateService, standaloneComponentsService);
 		})
 		.map(asResult);
 }
@@ -47,7 +47,7 @@ export function findUnusedClasses(
 function isUsed(
 	declaration: ClassDeclaration,
 	templateService: TemplateService,
-	moduleService: ModuleService
+	standaloneComponentsService: StandaloneComponentsService
 ): boolean {
 	const relevantDecorator = getRelevantDecorator(declaration)!;
 	const classType = relevantDecorator.getFullName();
@@ -63,7 +63,7 @@ function isUsed(
 	) {
 		return (
 			templateService.hasUsagesBySelectors(relevantDecorator) ||
-			moduleService.isStandaloneComponentUseAsRoute(
+			standaloneComponentsService.isStandaloneComponentUseAsRoute(
 				declaration,
 				relevantDecorator
 			)
