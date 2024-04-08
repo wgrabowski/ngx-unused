@@ -39,12 +39,16 @@ export function findUnusedClasses(
 				print(`Analyzing ${index + 1}/${length} (${percentage}%)`, true);
 				if (index === length - 1) stdout.write('\n');
 			}
-			return !isUsed(declaration, templateService, standaloneComponentsService);
+			return !isClassInUsed(
+				declaration,
+				templateService,
+				standaloneComponentsService
+			);
 		})
 		.map(asResult);
 }
 
-function isUsed(
+function isClassInUsed(
 	declaration: ClassDeclaration,
 	templateService: TemplateService,
 	standaloneComponentsService: StandaloneComponentsService
@@ -52,31 +56,29 @@ function isUsed(
 	const relevantDecorator = getRelevantDecorator(declaration)!;
 	const classType = relevantDecorator.getFullName();
 	const hasTsUsages = hasUsagesInTs(declaration);
+	let isInUsed = false;
 
 	if (hasTsUsages) {
-		return true;
+		isInUsed = true;
+	} else {
+		if (
+			classType === ClassTypes.Component ||
+			classType === ClassTypes.Directive
+		) {
+			isInUsed =
+				templateService.hasUsagesBySelectors(relevantDecorator) ||
+				standaloneComponentsService.isStandaloneComponentUseAsRoute(
+					declaration,
+					relevantDecorator
+				);
+		} else if (classType === ClassTypes.Pipe) {
+			isInUsed = templateService.hasUsagesByPipeName(relevantDecorator);
+		} else if (isGuardClass(declaration)) {
+			isInUsed = hasUsagesByCanActivateCall(declaration);
+		}
 	}
 
-	if (
-		classType === ClassTypes.Component ||
-		classType === ClassTypes.Directive
-	) {
-		return (
-			templateService.hasUsagesBySelectors(relevantDecorator) ||
-			standaloneComponentsService.isStandaloneComponentUseAsRoute(
-				declaration,
-				relevantDecorator
-			)
-		);
-	}
-	if (classType === ClassTypes.Pipe) {
-		return templateService.hasUsagesByPipeName(relevantDecorator);
-	}
-	if (isGuardClass(declaration)) {
-		return hasUsagesByCanActivateCall(declaration);
-	}
-
-	return false;
+	return isInUsed;
 }
 
 function asResult(declaration: ClassDeclaration): Result {
