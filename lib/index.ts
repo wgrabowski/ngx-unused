@@ -10,7 +10,7 @@ import {
 	printResults,
 	usage,
 } from './output.js';
-import { CliArgs } from './types.js';
+import { CliArgs, TsConfigFileResolverArgs } from './types.js';
 
 const cliArgs: CliArgs = minimist(argv.slice(2), {
 	alias: {
@@ -42,13 +42,21 @@ const project = createProject({
 	sourceRoots,
 	decorateOutput,
 });
+
 const sourceFiles = project.getSourceFiles();
 
 if (sourceFiles.length === 0) {
 	printNoFiles();
 	exit(0);
 }
-const results = findUnusedClasses(sourceFiles);
+
+const tsConfigFileResolverArgs: TsConfigFileResolverArgs = {
+	project: project,
+	containingFile: tsConfigFilePath,
+	compilerOptions: project.compilerOptions.get(),
+};
+
+const results = findUnusedClasses(sourceFiles, tsConfigFileResolverArgs);
 
 printResults(results);
 exit(results.length ? 1 : 0);

@@ -1,4 +1,5 @@
 import { ParsedArgs } from 'minimist';
+import { CompilerOptions, Project } from 'ts-morph';
 
 export interface RuntimeConfig {
 	sourceRoots: string[];
@@ -8,13 +9,20 @@ export interface RuntimeConfig {
 	// ci -mode , whatever
 }
 
-export type ClassType = 'Component' | 'Injectable' | 'Pipe' | 'Directive';
+// export type ClassType = 'Component' | 'Injectable' | 'Pipe' | 'Directive';
+
+export enum ClassTypes {
+	Component = 'Component',
+	Injectable = 'Injectable',
+	Pipe = 'Pipe',
+	Directive = 'Directive',
+}
 
 export interface Result {
 	fileName: string;
 	directory: string;
 	className: string;
-	classType: ClassType;
+	classType: ClassTypes;
 }
 
 export interface CliArgs extends ParsedArgs {
@@ -22,4 +30,15 @@ export interface CliArgs extends ParsedArgs {
 	project?: string;
 	sourceRoots?: string[];
 	decorateOutput?: string;
+}
+
+export interface TsConfigFileResolverArgs {
+	project: Project;
+	containingFile: string;
+	compilerOptions: CompilerOptions;
+}
+
+export interface StandAloneComponentArgs {
+	fullImportPath: string | undefined;
+	componentClassName: string | undefined;
 }
