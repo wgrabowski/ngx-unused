@@ -1,6 +1,6 @@
 {
 	"name": "ngx-unused",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Detect unused classes (components, pipes, services and directives) defined in Angular workspace.",
 	"bugs": {
 		"url": "https://github.com/wgrabowski/ngx-unused/issues"
