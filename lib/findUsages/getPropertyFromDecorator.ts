@@ -14,7 +14,9 @@ export function getPropertyFromDecoratorCall(
 		)
 		.find(structure => structure!.getName() === propertyName);
 
-	return matchedProperty
-		?.getInitializerIfKind(SyntaxKind.StringLiteral)
-		?.getLiteralValue();
+	return (
+		matchedProperty
+			?.getInitializerIfKind(SyntaxKind.StringLiteral)
+			?.getLiteralValue() || matchedProperty?.getText()
+	);
 }
