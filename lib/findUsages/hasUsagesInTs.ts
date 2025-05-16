@@ -1,18 +1,65 @@
 // if class is used in ts - excluding imports, exports, and declarations in NgModule decorator
 // with exception useClass,useExisting in providers
-import { ClassDeclaration, Node, SyntaxKind } from 'ts-morph';
+import { ClassDeclaration, Node, SourceFile, SyntaxKind } from 'ts-morph';
 
 export function hasUsagesInTs(declaration: ClassDeclaration): boolean {
 	const referencingNodes = declaration.findReferencesAsNodes().filter(node => {
 		const sourceFile = node.getSourceFile();
-		return (
-			!sourceFile.isDeclarationFile() &&
-			!sourceFile.getBaseName().includes('.spec.ts')
-		);
+		return !isFileIrrelevant(sourceFile);
 	});
-	return referencingNodes.some(node => isReferecingNodeRelevant(node));
+	const isDynamicallyImported =
+		isClassReferencedInDynamicImportCallback(declaration);
+
+	return (
+		referencingNodes.some(node => isReferecingNodeRelevant(node)) ||
+		isDynamicallyImported
+	);
 }
 
+function isFileIrrelevant(sourceFile: SourceFile): boolean {
+	return (
+		!sourceFile.isDeclarationFile() &&
+		!sourceFile.getBaseName().includes('.spec.ts')
+	);
+}
+function isDynamicImport(node: Node): boolean {
+	return (
+		node.isKind(SyntaxKind.CallExpression) &&
+		!!node.getFirstChildIfKind(SyntaxKind.ImportKeyword)
+	);
+}
+
+//	assuming dynamic imports looks like this
+//  import("../file/path.ts").then(x=>x.ClassName)
+function isDynamicImportReferencingClass(
+	node: Node,
+	declaration: ClassDeclaration
+): boolean {
+	const importCallback = node
+		.getFirstAncestorByKind(SyntaxKind.PropertyAccessExpression)
+		?.getNextSibling(node => node.isKind(SyntaxKind.ArrowFunction));
+
+	return !!importCallback
+		?.getDescendants()
+		.some(
+			descendant =>
+				descendant.isKind(SyntaxKind.Identifier) &&
+				descendant.getFullText() === declaration.getFullText() &&
+				descendant.getSourceFile().getFilePath() ===
+					declaration.getSourceFile().getFilePath()
+		);
+}
+
+function isClassReferencedInDynamicImportCallback(
+	declaration: ClassDeclaration
+): boolean {
+	return declaration
+		.getSourceFile()
+		.getReferencingNodesInOtherSourceFiles()
+		.filter(reference => !isFileIrrelevant(reference.getSourceFile()))
+		.filter(isDynamicImport)
+		.some(node => isDynamicImportReferencingClass(node, declaration));
+}
 function isReferecingNodeRelevant(node: Node): boolean {
 	const irrelevantNodeKinds = [
 		SyntaxKind.ImportSpecifier,
