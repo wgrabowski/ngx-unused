@@ -18,8 +18,8 @@ export function hasUsagesInTs(declaration: ClassDeclaration): boolean {
 
 function isFileIrrelevant(sourceFile: SourceFile): boolean {
 	return (
-		!sourceFile.isDeclarationFile() &&
-		!sourceFile.getBaseName().includes('.spec.ts')
+		sourceFile.isDeclarationFile() ||
+		sourceFile.getBaseName().includes('.spec.ts')
 	);
 }
 function isDynamicImport(node: Node): boolean {
@@ -37,17 +37,12 @@ function isDynamicImportReferencingClass(
 ): boolean {
 	const importCallback = node
 		.getFirstAncestorByKind(SyntaxKind.PropertyAccessExpression)
-		?.getNextSibling(node => node.isKind(SyntaxKind.ArrowFunction));
+		?.getFirstAncestorByKind(SyntaxKind.ArrowFunction)
+		?.getFirstDescendantByKind(SyntaxKind.ArrowFunction);
 
 	return !!importCallback
 		?.getDescendants()
-		.some(
-			descendant =>
-				descendant.isKind(SyntaxKind.Identifier) &&
-				descendant.getFullText() === declaration.getFullText() &&
-				descendant.getSourceFile().getFilePath() ===
-					declaration.getSourceFile().getFilePath()
-		);
+		.some(descendant => descendant.getFullText() === declaration.getName());
 }
 
 function isClassReferencedInDynamicImportCallback(
