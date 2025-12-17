@@ -36,7 +36,7 @@
 		"eslint": "^8.51.0",
 		"eslint-config-prettier": "^9.0.0",
 		"husky": "^8.0.0",
-		"lint-staged": "^14.0.1",
+		"lint-staged": "^15.2.9",
 		"prettier": "^2.8.8",
 		"prettier-plugin-organize-imports": "^2.2.0"
 	},
